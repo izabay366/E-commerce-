@@ -4,7 +4,6 @@ import { Check } from "lucide-react";
 import { useAuth } from "./AuthContext";
 import Header from "./Header";
 
-const API_URL = process.env.REACT_APP_API_URL || "http://localhost:5000";
 
 // Namespaced per-account (by user id) — a single shared key would let one
 // person's saved address leak into a different account's Account page on

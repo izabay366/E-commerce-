@@ -27,7 +27,7 @@ import imgChapati          from "./assets/chapati.png";
 import imgChips            from "./assets/chips.png";
 import imgEggs             from "./assets/eggs.png";
 import imgFantaBig         from "./assets/fanta big.png";
-import imgFantaSmall       from "./assets/fanta small.png";
+
 import imgFreshBeef        from "./assets/fresh beef meat.png";
 import imgGoatMeat         from "./assets/goat meat.png";
 import imgIndagara         from "./assets/indagara.png";

@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import {
-  Sparkles, Clock, ChevronLeft, CalendarDays,
-  MapPin, Phone, User, FileText, AlertCircle, CheckCircle,
+  Sparkles, Clock, ChevronLeft,
+  MapPin, AlertCircle, CheckCircle,
 } from "lucide-react";
 import { useAuth } from "./AuthContext";
 import Header from "./Header";

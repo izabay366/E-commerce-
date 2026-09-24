@@ -3,7 +3,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { useCart } from "./CartContext";
 import Header from "./Header";
 import {
-  Search, Heart, Bell, ShoppingBag, MapPin, Truck, Clock,
+  Heart, MapPin, Truck, Clock,
   Wallet, Fish, Beef, Coffee, Salad, Soup, Package, Plus, Star,
   Percent, Smartphone, QrCode, Copy, Gift, Moon
 } from "lucide-react";
@@ -395,8 +395,11 @@ export default function MuhangaShopHome() {
   const findCategoryName = (keyword) =>
     apiCategories.find((c) => c.name?.toLowerCase().includes(keyword))?.name || null;
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   const seafoodCategoryName = useMemo(() => findCategoryName("seafood"), [apiCategories]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   const readyToEatCategoryName = useMemo(() => findCategoryName("ready-to-eat") || findCategoryName("ready to eat"), [apiCategories]);
+
 
   const popular = useMemo(() => allItems.slice(0, 6), [allItems]);
   const seafoodToday = useMemo(

@@ -56,13 +56,6 @@ function ProtectedAdminRoute() {
    as we build it.
    ============================================ */
 
-function Placeholder({ label }) {
-  return (
-    <div className="min-h-screen flex items-center justify-center bg-stone-50">
-      <p className="text-stone-400 text-sm">{label} — not built yet</p>
-    </div>
-  );
-}
 
 /* ============================================
    APP ROUTER
