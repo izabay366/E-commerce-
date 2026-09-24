@@ -28,10 +28,23 @@ const poolConfig = process.env.DATABASE_URL
 
 const pool = new Pool(poolConfig);
 
+// Log which config mode is active (sanitized — never log the full DATABASE_URL)
+if (process.env.DATABASE_URL) {
+  const url = process.env.DATABASE_URL;
+  // Show host only, hide password
+  const sanitized = url.replace(/:([^:@]+)@/, ':****@');
+  console.log('🔌 DB mode: DATABASE_URL →', sanitized);
+} else {
+  console.log('🔌 DB mode: individual vars → host:', process.env.DB_HOST, 'db:', process.env.DB_NAME);
+}
+
 // Test the connection when this module is first loaded
 pool.connect((err, client, release) => {
   if (err) {
-    console.error('❌ Failed to connect to PostgreSQL:', err.message);
+    console.error('❌ Failed to connect to PostgreSQL:');
+    console.error('   Code   :', err.code);
+    console.error('   Message:', err.message);
+    console.error('   Detail :', err.detail || '(none)');
   } else {
     const dbLabel = process.env.DB_NAME || 'Neon (DATABASE_URL)';
     console.log('✅ Connected to PostgreSQL database:', dbLabel);
