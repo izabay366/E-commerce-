@@ -50,6 +50,43 @@ function saveRememberedDetails(userId, details) {
   }
 }
 
+// ── Muhanga District delivery areas ──────────────────────────────────────────
+// Two sectors currently served: Nyamabuye and Shyogwe.
+// Each sector lists its cells; each cell lists its villages.
+const MUHANGA_AREAS = {
+  Nyamabuye: {
+    Gahogo: [
+      "Kamazuru", "Kamugina", "Nyarucyamu I", "Nyarucyamu II", "Nyarucyamu III",
+      "Rutenga", "Ruvumera",
+    ],
+    Gitarama: [
+      "Gatika", "Kagitarama", "Kavumu", "Nyabisindu",
+    ],
+    Gifumba: [
+      "Gifumba", "Rugarama",
+    ],
+  },
+  Shyogwe: {
+    Kinini: [
+      "Gatare", "Kabungo", "Kinyami", "Musezero", "Nyakabingo", "Nyakaguhu",
+    ],
+    Mbare: [
+      "Buriza", "Muremberi", "Rubugurizo", "Songa", "Vunga",
+    ],
+    Mubuga: [
+      "Gakomeye", "Gasharu", "Kigarama", "Mapfundo", "Matsinsi",
+      "Nyamaganda", "Nyarucyamu", "Rwamaraba",
+    ],
+    Ruli: [
+      "Cyakabiri", "Gakombe", "Kabeza", "Murambi",
+    ],
+  },
+};
+
+const SECTOR_NAMES = Object.keys(MUHANGA_AREAS);
+function getCells(sector) { return sector ? Object.keys(MUHANGA_AREAS[sector] || {}) : []; }
+function getVillages(sector, cell) { return (MUHANGA_AREAS[sector] || {})[cell] || []; }
+
 // Update these if the numbers change — used to build the pre-filled MoMo/Airtel USSD codes below.
 const MOMO_PAYMENT_INFO = {
   mtnNumber: "07901722383",
@@ -97,9 +134,11 @@ function validateField(field, values) {
     case "phone":
       return values.phone.trim() ? null : "Enter your phone number.";
     case "sector":
-      return values.fulfillment === "delivery" && !values.sector.trim() ? "Enter your Sector." : null;
+      return values.fulfillment === "delivery" && !values.sector ? "Choose your sector." : null;
     case "cell":
-      return values.fulfillment === "delivery" && !values.cell.trim() ? "Enter your Cell." : null;
+      return values.fulfillment === "delivery" && !values.cell ? "Choose your cell." : null;
+    case "village":
+      return values.fulfillment === "delivery" && !values.village ? "Choose your village." : null;
     default:
       return null;
   }
@@ -136,12 +175,43 @@ export default function Checkout() {
   const [fulfillment, setFulfillment] = useState("delivery"); // 'delivery' | 'pickup'
   const [sector, setSector] = useState("");
   const [cell, setCell] = useState("");
+  const [village, setVillage] = useState("");
   const [landmark, setLandmark] = useState("");
   const [paymentMethod, setPaymentMethod] = useState("cash_on_delivery"); // 'cash_on_delivery' | 'momo'
   const [submitting, setSubmitting] = useState(false);
   const [formError, setFormError] = useState(null);
   const [fieldErrors, setFieldErrors] = useState({});
   const [touched, setTouched] = useState({});
+
+  // When sector changes, reset downstream selections
+  const handleSectorChange = (e) => {
+    const val = e.target.value;
+    setSector(val);
+    setCell("");
+    setVillage("");
+    if (touched.sector) {
+      setFieldErrors((prev) => ({
+        ...prev,
+        sector: val ? null : "Choose a sector.",
+        cell: null,
+        village: null,
+      }));
+    }
+  };
+
+  // When cell changes, reset village
+  const handleCellChange = (e) => {
+    const val = e.target.value;
+    setCell(val);
+    setVillage("");
+    if (touched.cell) {
+      setFieldErrors((prev) => ({
+        ...prev,
+        cell: val ? null : "Choose a cell.",
+        village: null,
+      }));
+    }
+  };
 
   // Prefill once on load: prefer the logged-in account's own details, then
   // fall back to whatever this browser remembers from a past checkout.
@@ -152,8 +222,19 @@ export default function Checkout() {
 
     setGuestName(accountName || remembered?.name || "");
     setGuestPhone(accountPhone || remembered?.phone || "");
-    setSector(remembered?.sector || "");
-    setCell(remembered?.cell || "");
+    // Only restore sector/cell/village if they are still valid options
+    const remSector = remembered?.sector || "";
+    const remCell = remembered?.cell || "";
+    const remVillage = remembered?.village || "";
+    if (SECTOR_NAMES.includes(remSector)) {
+      setSector(remSector);
+      if (getCells(remSector).includes(remCell)) {
+        setCell(remCell);
+        if (getVillages(remSector, remCell).includes(remVillage)) {
+          setVillage(remVillage);
+        }
+      }
+    }
     setLandmark(remembered?.landmark || "");
     // Only run once on mount — after this the person is free to edit.
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -162,7 +243,7 @@ export default function Checkout() {
   const items = cart?.items || [];
   const subtotal = cart?.subtotal || 0;
 
-  const fieldValues = { name: guestName, phone: guestPhone, sector, cell, fulfillment };
+  const fieldValues = { name: guestName, phone: guestPhone, sector, cell, village, fulfillment };
 
   const handleBlur = (field) => () => {
     setTouched((prev) => ({ ...prev, [field]: true }));
@@ -179,7 +260,9 @@ export default function Checkout() {
 
   const validateAll = () => {
     const errors = {};
-    const fields = fulfillment === "delivery" ? ["name", "phone", "sector", "cell"] : ["name", "phone"];
+    const fields = fulfillment === "delivery"
+      ? ["name", "phone", "sector", "cell", "village"]
+      : ["name", "phone"];
     fields.forEach((field) => {
       const msg = validateField(field, fieldValues);
       if (msg) errors[field] = msg;
@@ -197,7 +280,7 @@ export default function Checkout() {
     }
     const errors = validateAll();
     setFieldErrors(errors);
-    setTouched({ name: true, phone: true, sector: true, cell: true });
+    setTouched({ name: true, phone: true, sector: true, cell: true, village: true });
     if (Object.keys(errors).length > 0) return;
 
     setSubmitting(true);
@@ -210,7 +293,7 @@ export default function Checkout() {
       customer_phone: guestPhone.trim(),
       ...(fulfillment === "delivery"
         ? {
-            address: [sector.trim(), cell.trim(), landmark.trim()]
+            address: [sector, cell, village, landmark.trim()]
               .filter(Boolean)
               .join(", "),
           }
@@ -242,8 +325,9 @@ export default function Checkout() {
       saveRememberedDetails(isLoggedIn ? user?.userId : null, {
         name: guestName.trim(),
         phone: guestPhone.trim(),
-        sector: sector.trim(),
-        cell: cell.trim(),
+        sector,
+        cell,
+        village,
         landmark: landmark.trim(),
       });
 
@@ -333,38 +417,101 @@ export default function Checkout() {
               </button>
             </div>
 
-            {fulfillment === "delivery" && (
-              <div className="space-y-3">
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <input
-                      value={sector}
-                      onChange={setFieldAndValidate("sector", setSector)}
-                      onBlur={handleBlur("sector")}
-                      placeholder="Sector"
-                      className={inputClass("sector")}
-                    />
-                    <FieldError message={fieldErrors.sector} />
-                  </div>
-                  <div>
-                    <input
-                      value={cell}
-                      onChange={setFieldAndValidate("cell", setCell)}
-                      onBlur={handleBlur("cell")}
-                      placeholder="Cell"
-                      className={inputClass("cell")}
-                    />
-                    <FieldError message={fieldErrors.cell} />
-                  </div>
-                </div>
-                <input
-                  value={landmark}
-                  onChange={(e) => setLandmark(e.target.value)}
-                  placeholder="Landmark (optional)"
-                  className="w-full h-10 px-3 rounded-lg border border-stone-200 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-800/30"
-                />
+          {fulfillment === "delivery" && (
+            <div className="space-y-3">
+              {/* Sector */}
+              <div>
+                <label className="text-xs font-medium text-stone-500 mb-1 block">Sector</label>
+                <select
+                  value={sector}
+                  onChange={handleSectorChange}
+                  onBlur={() => {
+                    setTouched((p) => ({ ...p, sector: true }));
+                    setFieldErrors((p) => ({ ...p, sector: validateField("sector", fieldValues) }));
+                  }}
+                  className={`w-full h-10 px-3 rounded-lg border text-sm focus:outline-none focus:ring-2 bg-white ${
+                    fieldErrors.sector
+                      ? "border-red-300 focus:ring-red-200"
+                      : "border-stone-200 focus:ring-emerald-800/30"
+                  }`}
+                >
+                  <option value="">— Choose sector —</option>
+                  {SECTOR_NAMES.map((s) => (
+                    <option key={s} value={s}>{s}</option>
+                  ))}
+                </select>
+                <FieldError message={fieldErrors.sector} />
               </div>
-            )}
+
+              {/* Cell — only shown once sector is chosen */}
+              {sector && (
+                <div>
+                  <label className="text-xs font-medium text-stone-500 mb-1 block">Cell</label>
+                  <select
+                    value={cell}
+                    onChange={handleCellChange}
+                    onBlur={() => {
+                      setTouched((p) => ({ ...p, cell: true }));
+                      setFieldErrors((p) => ({ ...p, cell: validateField("cell", fieldValues) }));
+                    }}
+                    className={`w-full h-10 px-3 rounded-lg border text-sm focus:outline-none focus:ring-2 bg-white ${
+                      fieldErrors.cell
+                        ? "border-red-300 focus:ring-red-200"
+                        : "border-stone-200 focus:ring-emerald-800/30"
+                    }`}
+                  >
+                    <option value="">— Choose cell —</option>
+                    {getCells(sector).map((c) => (
+                      <option key={c} value={c}>{c}</option>
+                    ))}
+                  </select>
+                  <FieldError message={fieldErrors.cell} />
+                </div>
+              )}
+
+              {/* Village — only shown once cell is chosen */}
+              {sector && cell && (
+                <div>
+                  <label className="text-xs font-medium text-stone-500 mb-1 block">Village</label>
+                  <select
+                    value={village}
+                    onChange={(e) => {
+                      setVillage(e.target.value);
+                      if (touched.village) {
+                        setFieldErrors((p) => ({
+                          ...p,
+                          village: e.target.value ? null : "Choose your village.",
+                        }));
+                      }
+                    }}
+                    onBlur={() => {
+                      setTouched((p) => ({ ...p, village: true }));
+                      setFieldErrors((p) => ({ ...p, village: validateField("village", fieldValues) }));
+                    }}
+                    className={`w-full h-10 px-3 rounded-lg border text-sm focus:outline-none focus:ring-2 bg-white ${
+                      fieldErrors.village
+                        ? "border-red-300 focus:ring-red-200"
+                        : "border-stone-200 focus:ring-emerald-800/30"
+                    }`}
+                  >
+                    <option value="">— Choose village —</option>
+                    {getVillages(sector, cell).map((v) => (
+                      <option key={v} value={v}>{v}</option>
+                    ))}
+                  </select>
+                  <FieldError message={fieldErrors.village} />
+                </div>
+              )}
+
+              {/* Landmark / extra notes — always optional */}
+              <input
+                value={landmark}
+                onChange={(e) => setLandmark(e.target.value)}
+                placeholder="Landmark or extra directions (optional)"
+                className="w-full h-10 px-3 rounded-lg border border-stone-200 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-800/30"
+              />
+            </div>
+          )}
             {fulfillment === "pickup" && (
               <p className="text-xs text-stone-400">You'll collect your order directly from the shop.</p>
             )}
