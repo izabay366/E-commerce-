@@ -40,6 +40,9 @@ const { serviceRouter, cleanerRouter, requestRouter } = require('./routes/cleani
 const app  = express();
 const PORT = process.env.PORT || 5000;
 
+// Trust Render's reverse proxy so express-rate-limit reads the real client IP
+app.set('trust proxy', 1);
+
 // ─── Middleware ───────────────────────────────────────────────────────────────
 
 // Security headers — allow images served from our own /uploads endpoint
