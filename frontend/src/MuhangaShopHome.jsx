@@ -260,10 +260,24 @@ function ProductCard({ p }) {
     >
       <div className="relative h-32 bg-stone-100 flex items-center justify-center">
         {p.image ? (
-          <img src={p.image} alt={p.name} className="w-full h-full object-cover" />
+          <img
+            src={p.image}
+            alt={p.name}
+            className="w-full h-full object-cover"
+            onError={(e) => {
+              // Fallback: try name-matched local asset if the URL fails
+              const fallback = resolveImage(null, p.name);
+              if (fallback && e.target.src !== fallback) {
+                e.target.src = fallback;
+              } else {
+                e.target.style.display = "none";
+              }
+            }}
+          />
         ) : (
           <span className="text-stone-300 text-xs">image</span>
         )}
+
         {p.tag && (
           <span className="absolute top-2 left-2 bg-amber-500 text-emerald-950 text-[10px] font-semibold px-2 py-0.5 rounded-full">
             {p.tag}

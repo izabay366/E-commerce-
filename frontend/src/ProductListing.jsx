@@ -160,10 +160,24 @@ function ProductCard({ item, onAdd }) {
     >
       <div className="relative h-32 bg-stone-100 flex items-center justify-center">
         {resolveImage(item.image_url, item.name) ? (
-          <img src={resolveImage(item.image_url, item.name)} alt={item.name} className="w-full h-full object-cover" />
+          <img
+            src={resolveImage(item.image_url, item.name)}
+            alt={item.name}
+            className="w-full h-full object-cover"
+            onError={(e) => {
+              // DB image failed (e.g. not uploaded to Render) — fall back to local asset
+              const fallback = resolveImage(null, item.name);
+              if (fallback && e.target.src !== fallback) {
+                e.target.src = fallback;
+              } else {
+                e.target.style.display = "none";
+              }
+            }}
+          />
         ) : (
           <span className="text-stone-300 text-xs">no image</span>
         )}
+
         <button
           onClick={(e) => e.stopPropagation()}
           className="absolute top-2 right-2 w-7 h-7 rounded-full bg-white/90 flex items-center justify-center"
