@@ -1,0 +1,37 @@
+{
+  "name": "muhanga-marketplace-backend",
+  "version": "1.0.0",
+  "description": "REST API backend for Muhanga Marketplace - e-commerce and home cleaning platform",
+  "main": "src/server.js",
+  "scripts": {
+    "start": "node src/server.js",
+    "dev": "nodemon src/server.js"
+  },
+  "keywords": [
+    "muhanga",
+    "marketplace",
+    "ecommerce",
+    "rwanda",
+    "nodejs",
+    "express"
+  ],
+  "author": "Muhanga Marketplace",
+  "license": "ISC",
+  "dependencies": {
+    "bcryptjs": "^2.4.3",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.5",
+    "express": "^5.2.1",
+    "express-rate-limit": "^8.7.0",
+    "helmet": "^8.3.0",
+    "jsonwebtoken": "^9.0.2",
+    "multer": "^2.3.0",
+    "pg": "^8.11.3"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.2"
+  },
+  "allowScripts": {
+    "bcrypt@5.1.1": true
+  }
+}

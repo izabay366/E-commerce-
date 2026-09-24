@@ -1,0 +1,25 @@
+# render.yaml
+# Render Blueprint for Muhanga Marketplace Backend API
+# Docs: https://render.com/docs/blueprint-spec
+
+services:
+  - type: web
+    name: muhanga-marketplace-api
+    runtime: node
+    rootDir: backend
+    buildCommand: npm install
+    startCommand: npm start
+    healthCheckPath: /
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 5000
+      - key: DATABASE_URL
+        sync: false       # You will paste the Neon connection string in Render dashboard
+      - key: JWT_SECRET
+        generateValue: true   # Render auto-generates a secure random value
+      - key: JWT_EXPIRES_IN
+        value: 7d
+      - key: ALLOWED_ORIGIN
+        sync: false       # Set this to your Vercel frontend URL after deploying

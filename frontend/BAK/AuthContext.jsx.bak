@@ -1,0 +1,54 @@
+import React, { createContext, useContext, useState, useEffect } from "react";
+
+const AuthContext = createContext(null);
+
+// Decodes the whole JWT payload, not just role — so if the backend embeds
+// name/phone/email in the token, Checkout can prefill them without another
+// round trip. Fields the token doesn't include just come back undefined.
+export function decodeJwtPayload(token) {
+  try {
+    return JSON.parse(atob(token.split(".")[1]));
+  } catch {
+    return null;
+  }
+}
+
+export function AuthProvider({ children }) {
+  const [token, setToken] = useState(() => sessionStorage.getItem("token"));
+  const [user, setUser] = useState(() => {
+    const t = sessionStorage.getItem("token");
+    return t ? decodeJwtPayload(t) : null;
+  });
+
+  useEffect(() => {
+    if (token) {
+      sessionStorage.setItem("token", token);
+      setUser(decodeJwtPayload(token));
+    } else {
+      sessionStorage.removeItem("token");
+      setUser(null);
+    }
+  }, [token]);
+
+  const login = (newToken) => setToken(newToken);
+  const logout = () => setToken(null);
+
+  return (
+    <AuthContext.Provider
+      value={{
+        token,
+        role: user?.role || null,
+        user,
+        login,
+        logout,
+        isLoggedIn: !!token,
+      }}
+    >
+      {children}
+    </AuthContext.Provider>
+  );
+}
+
+export function useAuth() {
+  return useContext(AuthContext);
+}
