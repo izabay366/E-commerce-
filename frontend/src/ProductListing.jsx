@@ -295,14 +295,14 @@ export default function ProductListing() {
   return (
     <div className="min-h-screen bg-stone-50 font-sans">
       <Header />
-      <div className="max-w-6xl mx-auto px-5 pt-8 pb-4">
-        <h1 className="font-serif text-2xl font-semibold text-stone-900 mb-1">
+      <div className="max-w-6xl mx-auto px-4 sm:px-5 pt-6 sm:pt-8 pb-4">
+        <h1 className="font-serif text-xl sm:text-2xl font-semibold text-stone-900 mb-1">
           {activeCategory || "All products"}
         </h1>
-        <p className="text-sm text-stone-400">Browse everything MuhangaShop delivers</p>
+        <p className="text-xs sm:text-sm text-stone-400">Browse everything MuhangaShop delivers</p>
       </div>
 
-      <div className="max-w-6xl mx-auto px-5 mb-4 flex gap-3">
+      <div className="max-w-6xl mx-auto px-4 sm:px-5 mb-4 flex gap-3">
         <form onSubmit={handleSearchSubmit} className="relative flex-1">
           <Search className="w-4 h-4 text-stone-400 absolute left-3 top-1/2 -translate-y-1/2" />
           <input
@@ -320,13 +320,11 @@ export default function ProductListing() {
         </button>
       </div>
 
-      <div className="max-w-6xl mx-auto px-5 grid md:grid-cols-[200px_1fr] gap-6 pb-16">
-        <aside className={`${filtersOpen ? "block" : "hidden"} md:block`}>
+      <div className="max-w-6xl mx-auto px-4 sm:px-5 grid md:grid-cols-[200px_1fr] gap-6 pb-16">
+        {/* Desktop sidebar */}
+        <aside className="hidden md:block">
           <div className="bg-white rounded-2xl border border-stone-200 p-3 sticky top-20">
-            <div className="flex items-center justify-between mb-2 md:hidden">
-              <p className="text-xs font-semibold text-stone-400 uppercase">Categories</p>
-              <button onClick={() => setFiltersOpen(false)}><X className="w-4 h-4 text-stone-400" /></button>
-            </div>
+            <p className="text-xs font-semibold text-stone-400 uppercase mb-2 px-1">Categories</p>
             <button
               onClick={() => setCategory(null)}
               className={`w-full text-left text-sm px-3 py-2 rounded-lg mb-1 ${
@@ -349,6 +347,47 @@ export default function ProductListing() {
           </div>
         </aside>
 
+        {/* Mobile filter slide-over */}
+        {filtersOpen && (
+          <>
+            {/* Backdrop */}
+            <div
+              className="fixed inset-0 z-40 bg-black/30 md:hidden"
+              onClick={() => setFiltersOpen(false)}
+            />
+            {/* Panel */}
+            <div className="fixed inset-y-0 left-0 z-50 w-72 bg-white shadow-xl flex flex-col md:hidden">
+              <div className="flex items-center justify-between px-4 h-14 border-b border-stone-100">
+                <p className="text-sm font-semibold text-stone-900">Filter by category</p>
+                <button onClick={() => setFiltersOpen(false)}>
+                  <X className="w-5 h-5 text-stone-400" />
+                </button>
+              </div>
+              <div className="flex-1 overflow-y-auto px-3 py-3 space-y-1">
+                <button
+                  onClick={() => { setCategory(null); setFiltersOpen(false); }}
+                  className={`w-full text-left text-sm px-3 py-2 rounded-lg ${
+                    !activeCategory ? "bg-emerald-800 text-white" : "text-stone-600 hover:bg-stone-50"
+                  }`}
+                >
+                  All products
+                </button>
+                {categories.map((name) => (
+                  <button
+                    key={name}
+                    onClick={() => { setCategory(name); setFiltersOpen(false); }}
+                    className={`w-full text-left text-sm px-3 py-2 rounded-lg ${
+                      activeCategory === name ? "bg-emerald-800 text-white" : "text-stone-600 hover:bg-stone-50"
+                    }`}
+                  >
+                    {name}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </>
+        )}
+
         <main>
           {error && (
             <div className="bg-red-50 border border-red-100 text-red-700 text-sm rounded-xl p-4 mb-4">
@@ -368,7 +407,7 @@ export default function ProductListing() {
             </div>
           )}
 
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2 sm:gap-3">
             {loading
               ? Array.from({ length: 8 }).map((_, i) => <SkeletonCard key={i} />)
               : filteredItems.map((item) => (

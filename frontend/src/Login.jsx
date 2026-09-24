@@ -2,7 +2,6 @@ import React, { useState } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import { Eye, EyeOff } from "lucide-react";
 import { useAuth, decodeJwtPayload } from "./AuthContext";
-import Header from "./Header";
 
 const API_URL = process.env.REACT_APP_API_URL || "http://localhost:5000";
 
@@ -55,10 +54,9 @@ export default function Login() {
   };
 
   return (
-    <div className="min-h-screen bg-stone-50 font-sans">
-      <Header />
-      <div className="flex items-center justify-center px-5 pt-16">
+    <div className="min-h-screen bg-stone-50 font-sans flex items-center justify-center px-5">
       <div className="w-full max-w-sm">
+
         <h1 className="font-serif text-2xl font-semibold text-stone-900 mb-1 text-center">Sign in</h1>
         <p className="text-sm text-stone-400 text-center mb-6">Track orders and check out faster</p>
 
@@ -107,7 +105,7 @@ export default function Login() {
           <Link to="/" className="text-stone-500 underline">Continue as guest</Link>
         </p>
       </div>
-      </div>
     </div>
+
   );
 }

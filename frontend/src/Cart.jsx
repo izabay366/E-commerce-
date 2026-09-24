@@ -82,18 +82,30 @@ export default function Cart() {
           <>
             <div className="bg-white rounded-2xl border border-stone-200 divide-y divide-stone-100 mb-6">
               {items.map((item) => (
-                <div key={item.id} className="p-4 flex items-center gap-4">
-                  <div className="w-16 h-16 rounded-xl bg-stone-100 flex items-center justify-center shrink-0">
+                <div key={item.id} className="p-3 sm:p-4 flex items-start sm:items-center gap-3 sm:gap-4">
+                  {/* Thumbnail */}
+                  <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-xl bg-stone-100 flex items-center justify-center shrink-0">
                     <span className="text-stone-300 text-[10px]">image</span>
                   </div>
+
+                  {/* Name + price info */}
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-medium text-stone-900 truncate">{item.product_name}</p>
                     <p className="text-xs text-stone-400">{item.variant_name}</p>
-                    <p className="text-sm font-semibold text-emerald-900 mt-1">
+                    {/* On mobile: price and subtotal sit below the name */}
+                    <div className="flex items-center gap-2 mt-1 sm:hidden">
+                      <p className="text-xs text-stone-500">{Number(item.unit_price).toLocaleString()} RWF each</p>
+                      <span className="text-stone-300">·</span>
+                      <p className="text-sm font-semibold text-emerald-900">{Number(item.subtotal).toLocaleString()} RWF</p>
+                    </div>
+                    {/* Desktop: only unit price here */}
+                    <p className="hidden sm:block text-sm font-semibold text-emerald-900 mt-1">
                       {Number(item.unit_price).toLocaleString()} RWF
                     </p>
                   </div>
-                  <div className="flex items-center gap-2 shrink-0">
+
+                  {/* Qty controls */}
+                  <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
                     <button
                       onClick={() => handleQuantityChange(item, -1)}
                       disabled={busyItemId === item.id}
@@ -110,9 +122,13 @@ export default function Cart() {
                       <Plus className="w-3 h-3 text-stone-600" />
                     </button>
                   </div>
-                  <p className="text-sm font-semibold text-stone-900 w-20 text-right shrink-0">
+
+                  {/* Subtotal — desktop only (shown inline with mobile price above) */}
+                  <p className="hidden sm:block text-sm font-semibold text-stone-900 w-20 text-right shrink-0">
                     {Number(item.subtotal).toLocaleString()} RWF
                   </p>
+
+                  {/* Remove */}
                   <button
                     onClick={() => handleRemove(item)}
                     disabled={busyItemId === item.id}
