@@ -158,6 +158,68 @@ const deleteUser = async (userId) => {
   return result.rows.length > 0;
 };
 
+// ─── saveResetToken ───────────────────────────────────────────────────────────
+
+/**
+ * Stores a password-reset token and its expiry on the user row.
+ * Prerequisite: the users table must have reset_token (TEXT) and
+ * reset_expires (TIMESTAMPTZ) columns (run the migration SQL below once):
+ *
+ *   ALTER TABLE users
+ *     ADD COLUMN IF NOT EXISTS reset_token   TEXT,
+ *     ADD COLUMN IF NOT EXISTS reset_expires TIMESTAMPTZ;
+ *
+ * @param {string} userId  - UUID of the user
+ * @param {string} token   - raw token (hex string)
+ * @param {Date}   expires - JS Date object (e.g. 1 hour from now)
+ */
+const saveResetToken = async (userId, token, expires) => {
+  await pool.query(
+    `UPDATE users SET reset_token = $1, reset_expires = $2 WHERE id = $3`,
+    [token, expires.toISOString(), userId]
+  );
+};
+
+// ─── findUserByResetToken ─────────────────────────────────────────────────────
+
+/**
+ * Finds a user by reset token — only if the token has not expired.
+ * Returns null if the token is invalid or expired.
+ *
+ * @param {string} token - raw token to look up
+ * @returns {object|null} Safe user row (no password_hash)
+ */
+const findUserByResetToken = async (token) => {
+  const result = await pool.query(
+    `SELECT ${SAFE_USER_COLS}
+     FROM users
+     WHERE reset_token = $1
+       AND reset_expires > NOW()`,
+    [token]
+  );
+  return result.rows[0] || null;
+};
+
+// ─── updatePasswordAndClearToken ──────────────────────────────────────────────
+
+/**
+ * Updates a user's password hash and clears the reset token + expiry
+ * atomically in a single UPDATE statement.
+ *
+ * @param {string} userId       - UUID of the user
+ * @param {string} passwordHash - bcrypt hash of the new password
+ */
+const updatePasswordAndClearToken = async (userId, passwordHash) => {
+  await pool.query(
+    `UPDATE users
+     SET password_hash  = $1,
+         reset_token    = NULL,
+         reset_expires  = NULL
+     WHERE id = $2`,
+    [passwordHash, userId]
+  );
+};
+
 // ─── EXPORTS ──────────────────────────────────────────────────────────────────
 
 module.exports = {
@@ -168,4 +230,8 @@ module.exports = {
   createUser,
   getAllUsers,
   deleteUser,
+  saveResetToken,
+  findUserByResetToken,
+  updatePasswordAndClearToken,
 };
+

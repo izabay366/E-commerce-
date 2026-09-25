@@ -17,9 +17,11 @@
 
 'use strict';
 
+const crypto      = require('crypto');       // built-in Node.js module
 const bcrypt      = require('bcryptjs');
 const jwt         = require('jsonwebtoken');
 const authService = require('../services/authService');
+const { sendPasswordResetEmail } = require('../services/emailService');
 
 const BCRYPT_SALT_ROUNDS = 12;
 const JWT_EXPIRES_IN     = process.env.JWT_EXPIRES_IN || '7d';
@@ -221,6 +223,104 @@ const me = async (req, res) => {
   return res.status(200).json({ user: req.user });
 };
 
+// ─── POST /api/auth/forgot-password ──────────────────────────────────────────
+
+/**
+ * Accepts an email address and — if a matching account exists — generates a
+ * short-lived reset token and emails a reset link.
+ *
+ * Security note: always returns the same generic 200 response whether or not
+ * the email is registered, to prevent user enumeration.
+ *
+ * Required body:
+ *   email  string
+ *
+ * Responses:
+ *   200  { message }  — always (even if email not found)
+ *   400  { message }  — missing / invalid email format
+ *   500  { message }  — unexpected error
+ */
+const forgotPassword = async (req, res) => {
+  const { email } = req.body;
+
+  if (!email || !isValidEmail(email)) {
+    return res.status(400).json({ message: 'A valid email address is required.' });
+  }
+
+  // Generic response — never reveal whether the email is registered
+  const GENERIC_MSG =
+    'If that email is registered, you will receive a password-reset link shortly.';
+
+  try {
+    const user = await authService.findUserByEmail(email);
+
+    if (!user) {
+      // Pretend we sent the email — prevents user enumeration
+      return res.status(200).json({ message: GENERIC_MSG });
+    }
+
+    // Generate a cryptographically secure random token (64 hex chars)
+    const token   = crypto.randomBytes(32).toString('hex');
+    const expires = new Date(Date.now() + 60 * 60 * 1000); // 1 hour from now
+
+    await authService.saveResetToken(user.id, token, expires);
+
+    // Send reset email (fails silently if SMTP not configured — see emailService.js)
+    await sendPasswordResetEmail(user.email, user.first_name, token);
+
+    return res.status(200).json({ message: GENERIC_MSG });
+
+  } catch (err) {
+    console.error('[forgotPassword] Unexpected error:', err.message);
+    return res.status(500).json({ message: 'An unexpected error occurred.' });
+  }
+};
+
+// ─── POST /api/auth/reset-password ───────────────────────────────────────────
+
+/**
+ * Validates a reset token and replaces the user's password.
+ *
+ * Required body:
+ *   token     string  — the raw token from the email link
+ *   password  string  — new password (min 8 chars)
+ *
+ * Responses:
+ *   200  { message }  — success
+ *   400  { message }  — missing fields or weak password
+ *   404  { message }  — token invalid or expired
+ *   500  { message }  — unexpected error
+ */
+const resetPassword = async (req, res) => {
+  const { token, password } = req.body;
+
+  if (!token || typeof token !== 'string' || !token.trim()) {
+    return res.status(400).json({ message: 'Reset token is required.' });
+  }
+  if (!password || typeof password !== 'string' || password.length < 8) {
+    return res.status(400).json({ message: 'Password must be at least 8 characters.' });
+  }
+
+  try {
+    const user = await authService.findUserByResetToken(token.trim());
+
+    if (!user) {
+      return res.status(404).json({
+        message: 'This reset link is invalid or has expired. Please request a new one.',
+      });
+    }
+
+    const passwordHash = await bcrypt.hash(password, BCRYPT_SALT_ROUNDS);
+    await authService.updatePasswordAndClearToken(user.id, passwordHash);
+
+    return res.status(200).json({ message: 'Your password has been reset. You can now sign in.' });
+
+  } catch (err) {
+    console.error('[resetPassword] Unexpected error:', err.message);
+    return res.status(500).json({ message: 'An unexpected error occurred.' });
+  }
+};
+
 // ─── EXPORTS ──────────────────────────────────────────────────────────────────
 
-module.exports = { register, login, me };
+module.exports = { register, login, me, forgotPassword, resetPassword };

@@ -7,23 +7,27 @@
  *   const upload = require('../middleware/upload');
  *   router.post('/:id/image', authenticate, upload.single('image'), controller);
  *
- * Files are saved to backend/uploads/ with a unique filename.
- * Served statically at http://localhost:5000/uploads/<filename>
+ * Images are uploaded directly to Cloudinary (not local disk), since
+ * Render's filesystem is ephemeral and does not persist uploaded files
+ * across restarts/redeploys.
+ *
+ * On success, req.file.path is the full Cloudinary URL — save that
+ * directly to the database as the product's image URL.
  * ─────────────────────────────────────────────────────────────
  */
 
 'use strict';
 
 const multer = require('multer');
-const path = require('path');
+const { CloudinaryStorage } = require('multer-storage-cloudinary');
+const cloudinary = require('../config/cloudinary');
 
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    cb(null, path.join(__dirname, '../../uploads'));
-  },
-  filename: (req, file, cb) => {
-    const uniqueName = Date.now() + '-' + Math.round(Math.random() * 1e9);
-    cb(null, uniqueName + path.extname(file.originalname));
+const storage = new CloudinaryStorage({
+  cloudinary,
+  params: {
+    folder: 'muhanga-marketplace/products', // organizes uploads in your Cloudinary account
+    allowed_formats: ['jpg', 'jpeg', 'png', 'webp'],
+    transformation: [{ width: 1200, height: 1200, crop: 'limit' }], // caps oversized uploads
   },
 });
 

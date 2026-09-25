@@ -41,11 +41,24 @@ const registerLimiter = rateLimit({
   legacyHeaders: false,
 });
 
+// Max 5 password-reset requests per IP per 15 minutes — prevents email spam
+// while still letting a real user retry if their email didn't arrive.
+const resetLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 5,
+  message: { success: false, message: 'Too many reset requests. Please wait a few minutes and try again.' },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
 // Public endpoints — no auth required, but rate-limited
-router.post('/register', registerLimiter, authController.register);
-router.post('/login',    loginLimiter, authController.login);
+router.post('/register',         registerLimiter, authController.register);
+router.post('/login',            loginLimiter,    authController.login);
+router.post('/forgot-password',  resetLimiter,    authController.forgotPassword);
+router.post('/reset-password',   resetLimiter,    authController.resetPassword);
 
 // Protected endpoint — JWT required
 router.get('/me', authenticate, authController.me);
 
 module.exports = router;
+

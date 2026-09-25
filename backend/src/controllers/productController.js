@@ -233,8 +233,9 @@ const deleteProduct = async (req, res) => {
 
 /**
  * POST /api/products/:id/image
- * Admin only. Accepts a single file field named "image", saves it,
- * and stores its URL on the product.
+ * Admin only. Accepts a single file field named "image", uploads it to
+ * Cloudinary (via the CloudinaryStorage engine configured in
+ * middleware/upload.js), and stores the resulting URL on the product.
  */
 const uploadProductImage = async (req, res) => {
   // Role check is case-insensitive — tokens/DB store role as 'ADMIN' (uppercase).
@@ -252,9 +253,9 @@ const uploadProductImage = async (req, res) => {
   }
 
   try {
-    // Store a relative path so the URL isn't hardcoded to localhost.
-    // The frontend will prepend the API base URL at render time.
-    const imageUrl = `/uploads/${req.file.filename}`;
+    // req.file.path is the full Cloudinary URL — already public and permanent,
+    // so it's stored directly with no need to prepend an API base URL.
+    const imageUrl = req.file.path;
     const product = await productService.updateProductImage(productId, imageUrl);
 
     if (!product) {
