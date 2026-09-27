@@ -253,9 +253,9 @@ export default function ProductDetail() {
 
         <div className="grid md:grid-cols-2 gap-8">
           {/* Image */}
-          <div className="relative h-80 md:h-96 bg-stone-100 rounded-2xl overflow-hidden flex items-center justify-center">
+          <div className="relative h-80 md:h-96 bg-stone-100 rounded-2xl overflow-hidden flex items-center justify-center p-6">
             {resolveImage(product.image_url, product.name) ? (
-              <img src={resolveImage(product.image_url, product.name)} alt={product.name} className="w-full h-full object-cover" />
+              <img src={resolveImage(product.image_url, product.name)} alt={product.name} className="max-w-full max-h-full object-contain" />
             ) : (
               <span className="text-stone-300 text-sm">No image</span>
             )}

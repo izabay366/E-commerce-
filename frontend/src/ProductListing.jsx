@@ -158,12 +158,12 @@ function ProductCard({ item, onAdd }) {
       onClick={() => navigate(`/product/${item.id}`)}
       className="bg-white rounded-2xl border border-stone-200 overflow-hidden hover:shadow-md transition-shadow cursor-pointer"
     >
-      <div className="relative h-32 bg-stone-100 flex items-center justify-center">
+      <div className="relative aspect-square bg-stone-100 flex items-center justify-center p-3">
         {resolveImage(item.image_url, item.name) ? (
           <img
             src={resolveImage(item.image_url, item.name)}
             alt={item.name}
-            className="w-full h-full object-cover"
+            className="max-w-full max-h-full object-contain"
             onError={(e) => {
               // DB image failed (e.g. not uploaded to Render) — fall back to local asset
               const fallback = resolveImage(null, item.name);
@@ -211,7 +211,7 @@ function ProductCard({ item, onAdd }) {
 function SkeletonCard() {
   return (
     <div className="bg-white rounded-2xl border border-stone-200 overflow-hidden animate-pulse">
-      <div className="h-32 bg-stone-100" />
+      <div className="aspect-square bg-stone-100" />
       <div className="p-3 space-y-2">
         <div className="h-3 bg-stone-100 rounded w-3/4" />
         <div className="h-3 bg-stone-100 rounded w-1/2" />
