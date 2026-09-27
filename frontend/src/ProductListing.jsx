@@ -158,7 +158,7 @@ function ProductCard({ item, onAdd }) {
       onClick={() => navigate(`/product/${item.id}`)}
       className="bg-white rounded-2xl border border-stone-200 overflow-hidden hover:shadow-md transition-shadow cursor-pointer"
     >
-      <div className="relative aspect-square bg-stone-100 flex items-center justify-center p-3">
+      <div className="relative aspect-square bg-stone-100 flex items-center justify-center p-6">
         {resolveImage(item.image_url, item.name) ? (
           <img
             src={resolveImage(item.image_url, item.name)}
