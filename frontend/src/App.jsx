@@ -12,6 +12,8 @@ import Checkout from "./Checkout";
 import OrderConfirmation from "./OrderConfirmation";
 import Login from "./Login"; // shared by customers (/login) and admins (/admin/login)
 import Register from "./Register";
+import ForgotPassword from "./ForgotPassword";
+import ResetPassword from "./ResetPassword";
 import Account from "./Account";
 import DeliveryAreas from "./DeliveryAreas";
 import ContactShop from "./ContactShop";
@@ -80,6 +82,8 @@ export default function App() {
               {/* Optional customer accounts — same Login component admins use, role decides where it redirects */}
               <Route path="/login" element={<Login />} />
               <Route path="/register" element={<Register />} />
+              <Route path="/forgot-password" element={<ForgotPassword />} />
+              <Route path="/reset-password" element={<ResetPassword />} />
               <Route path="/account" element={<Account />} />
               <Route path="/delivery-areas" element={<DeliveryAreas />} />
               <Route path="/contact" element={<ContactShop />} />
