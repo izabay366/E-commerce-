@@ -31,3 +31,7 @@ yarn-debug.log*
 # IDE
 .idea/
 .vscode/
+
+# One-off helper / debug scripts (contain DB credentials — never commit)
+backend/check_admin.js
+backend/update_admin_email.js

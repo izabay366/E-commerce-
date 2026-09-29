@@ -2,13 +2,17 @@
  * authRoutes.js
  * ─────────────────────────────────────────────────────────────
  * Routes:
- *   POST /api/auth/register   — create new account
- *   POST /api/auth/login      — authenticate + receive JWT
- *   GET  /api/auth/me         — get current user (requires Bearer token)
+ *   POST /api/auth/register          — create new account
+ *   POST /api/auth/login             — authenticate + receive JWT
+ *   POST /api/auth/forgot-password   — request password-reset email
+ *   POST /api/auth/reset-password    — apply new password via token
+ *   GET  /api/auth/me                — get current user (JWT required)
  *
- * Rate limiting:
- *   /login and /register are limited per-IP to slow down brute-force
- *   password guessing and automated account creation.
+ * Rate limiting (all per-IP):
+ *   /login            — 5 attempts / 15 min  (bots get shut out fast)
+ *   /register         — 5 accounts / 1 hour  (stops account spam)
+ *   /forgot-password  — 3 requests / 15 min  (stops email bombing)
+ *   /reset-password   — 5 requests / 15 min  (stops token brute-force)
  * ─────────────────────────────────────────────────────────────
  */
 
@@ -21,12 +25,15 @@ const authenticate   = require('../middleware/authenticate');
 
 const router = express.Router();
 
-// Max 10 login attempts per IP per 15 minutes — generous enough for a
-// real user who mistypes their password a few times, strict enough to
-// make scripted brute-force guessing impractical.
+// Max 5 login attempts per IP per 15 minutes.
+// Lowered from 10: a real user rarely needs more than 3 tries.
+// skipSuccessfulRequests: true — successful logins don't burn the quota,
+// only failed attempts count, so a user who types wrong 4 times then
+// succeeds is not penalised for the final correct attempt.
 const loginLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: 10,
+  max: 5,
+  skipSuccessfulRequests: true,
   message: { success: false, message: 'Too many login attempts. Please try again in a few minutes.' },
   standardHeaders: true,
   legacyHeaders: false,
@@ -41,21 +48,31 @@ const registerLimiter = rateLimit({
   legacyHeaders: false,
 });
 
-// Max 5 password-reset requests per IP per 15 minutes — prevents email spam
-// while still letting a real user retry if their email didn't arrive.
-const resetLimiter = rateLimit({
+// Max 3 forgot-password requests per IP per 15 minutes — stops email bombing.
+// Kept intentionally strict: a real user only needs to click once or twice.
+const forgotPasswordLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: 5,
+  max: 3,
   message: { success: false, message: 'Too many reset requests. Please wait a few minutes and try again.' },
   standardHeaders: true,
   legacyHeaders: false,
 });
 
-// Public endpoints — no auth required, but rate-limited
-router.post('/register',         registerLimiter, authController.register);
-router.post('/login',            loginLimiter,    authController.login);
-router.post('/forgot-password',  resetLimiter,    authController.forgotPassword);
-router.post('/reset-password',   resetLimiter,    authController.resetPassword);
+// Max 5 reset-password submissions per IP per 15 minutes — stops token
+// brute-force. This counter is independent of the forgot-password counter.
+const resetPasswordLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 5,
+  message: { success: false, message: 'Too many reset attempts. Please wait a few minutes and try again.' },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+// Public endpoints — no auth required, but individually rate-limited
+router.post('/register',        registerLimiter,       authController.register);
+router.post('/login',           loginLimiter,          authController.login);
+router.post('/forgot-password', forgotPasswordLimiter, authController.forgotPassword);
+router.post('/reset-password',  resetPasswordLimiter,  authController.resetPassword);
 
 // Protected endpoint — JWT required
 router.get('/me', authenticate, authController.me);

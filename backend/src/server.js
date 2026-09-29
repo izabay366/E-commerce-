@@ -46,12 +46,15 @@ app.set('trust proxy', 1);
 // ─── Middleware ───────────────────────────────────────────────────────────────
 
 // Security headers — allow images served from our own /uploads endpoint
+const frontendOrigin = process.env.FRONTEND_URL || process.env.ALLOWED_ORIGIN || 'http://localhost:3000';
+const apiOrigin      = `http://localhost:${process.env.PORT || 5000}`;
+
 app.use(helmet({
   contentSecurityPolicy: {
     directives: {
       ...helmet.contentSecurityPolicy.getDefaultDirectives(),
-      // Allow images loaded from the API server (local uploads)
-      'img-src': ["'self'", 'data:', 'http://localhost:5000', 'http://localhost:3000'],
+      // Allow images from the API server and configured frontend origin only
+      'img-src': ["'self'", 'data:', apiOrigin, frontendOrigin],
     },
   },
 }));
@@ -65,10 +68,12 @@ app.use(cors({
 // Parse incoming JSON bodies — 10kb limit prevents payload bloat attacks
 app.use(express.json({ limit: '10kb' }));
 
-// Global rate limiter — 200 requests per IP per 15 min across all /api routes
+// Global rate limiter — 100 requests per IP per 15 min across all /api routes.
+// Reduced from 200: cuts bot/script abuse in half with no noticeable impact
+// on legitimate users who typically make far fewer requests per session.
 const globalLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: 200,
+  max: 100,
   message: { success: false, message: 'Too many requests. Please slow down and try again later.' },
   standardHeaders: true,
   legacyHeaders: false,
@@ -77,9 +82,12 @@ app.use('/api', globalLimiter);
 
 // Serve uploaded product images statically — with explicit CORS headers so
 // the React dev server on :3000 can load images from this server on :5000.
+// Serve uploaded product images — restrict CORS to the configured frontend
+// origin only, not the open wildcard (*) which lets any site embed your images.
 app.use('/uploads', (req, res, next) => {
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
+  const allowedOrigin = process.env.ALLOWED_ORIGIN || 'http://localhost:3000';
+  res.setHeader('Access-Control-Allow-Origin', allowedOrigin);
+  res.setHeader('Cross-Origin-Resource-Policy', 'same-site');
   next();
 }, express.static(path.join(__dirname, '../uploads')));
 
